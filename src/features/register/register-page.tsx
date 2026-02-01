@@ -4,6 +4,7 @@ import { supabase } from '@/src/lib/supabase'
 import { router } from 'expo-router'
 import { useState } from 'react'
 import {
+    ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -20,6 +21,8 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
 
+  const [loading, setLoading] = useState(false)
+
   async function handleSignup() {
     setError(null)
 
@@ -28,17 +31,22 @@ export default function RegisterPage() {
       return
     }
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password
-    })
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password
+      })
 
-    if (error) {
-      setError(error.message)
-      return
+      if (error) {
+        setError(error.message)
+        return
+      }
+
+      router.replace('/(tabs)')
+    } finally {
+      setLoading(false)
     }
-
-    router.replace('/(tabs)')
   }
 
   return (
@@ -126,10 +134,15 @@ export default function RegisterPage() {
 
             <TouchableOpacity
               onPress={handleSignup}
+              disabled={loading}
               activeOpacity={0.8}
-              className="w-full h-14 bg-blue-600 rounded-2xl items-center justify-center mt-6 shadow-md"
+              className={`w-full h-14 rounded-2xl items-center justify-center mt-6 shadow-md ${loading ? 'bg-blue-400' : 'bg-blue-600'}`}
             >
-              <Text className="text-white font-bold text-lg">Register</Text>
+              {loading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text className="text-white font-bold text-lg">Register</Text>
+              )}
             </TouchableOpacity>
           </View>
 

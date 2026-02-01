@@ -4,6 +4,7 @@ import { supabase } from '@/src/lib/supabase'
 import { router } from 'expo-router'
 import { useState } from 'react'
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -19,20 +20,27 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
 
+  const [loading, setLoading] = useState(false)
+
   async function handleLogin() {
     setError(null)
+    setLoading(true)
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    })
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
 
-    if (error) {
-      setError(error.message)
-      return
+      if (error) {
+        setError(error.message)
+        return
+      }
+
+      router.replace('/(tabs)')
+    } finally {
+      setLoading(false)
     }
-
-    router.replace('/(tabs)')
   }
 
   return (
@@ -104,10 +112,15 @@ export default function LoginPage() {
 
             <TouchableOpacity
               onPress={handleLogin}
+              disabled={loading}
               activeOpacity={0.8}
-              className="w-full h-14 bg-blue-600 rounded-2xl items-center justify-center mt-6 shadow-md"
+              className={`w-full h-14 rounded-2xl items-center justify-center mt-6 shadow-md ${loading ? 'bg-blue-400' : 'bg-blue-600'}`}
             >
-              <Text className="text-white font-bold text-lg">Sign In</Text>
+              {loading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text className="text-white font-bold text-lg">Sign In</Text>
+              )}
             </TouchableOpacity>
           </View>
 

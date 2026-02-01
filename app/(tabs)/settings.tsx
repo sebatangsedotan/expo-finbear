@@ -3,12 +3,26 @@ import { ThemedView } from '@/components/themed-view'
 import { IconSymbol } from '@/components/ui/icon-symbol'
 import { supabase } from '@/src/lib/supabase'
 import { router } from 'expo-router'
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
+import { useState } from 'react'
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View
+} from 'react-native'
 
 export default function SettingsScreen() {
+  const [loading, setLoading] = useState(false)
+
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.replace('/login')
+    setLoading(true)
+    try {
+      await supabase.auth.signOut()
+      router.replace('/login')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -29,11 +43,18 @@ export default function SettingsScreen() {
         <View className="w-full gap-y-4">
           <TouchableOpacity
             onPress={handleLogout}
-            className="flex-row items-center p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/20"
+            disabled={loading}
+            className={`flex-row items-center p-4 rounded-2xl border ${loading ? 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200' : 'bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/20'}`}
           >
-            <IconSymbol name="paperplane.fill" size={20} color="#ef4444" />
-            <ThemedText className="ml-3 text-red-600 dark:text-red-400 font-semibold">
-              Sign Out
+            {loading ? (
+              <ActivityIndicator color={loading ? '#71717a' : '#ef4444'} />
+            ) : (
+              <IconSymbol name="paperplane.fill" size={20} color="#ef4444" />
+            )}
+            <ThemedText
+              className={`ml-3 font-semibold ${loading ? 'text-zinc-500' : 'text-red-600 dark:text-red-400'}`}
+            >
+              {loading ? 'Signing out...' : 'Sign Out'}
             </ThemedText>
           </TouchableOpacity>
         </View>
