@@ -1,12 +1,11 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
 
 export default function DashboardScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <View className="flex-1 bg-slate-50 pt-12">
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View className="px-6 py-4 flex-row justify-between items-center">
+        <View className="px-6 mt-10 flex-row justify-between items-center">
           <View>
             <Text className="text-slate-400 text-sm font-medium">
               Welcome back,
@@ -245,6 +244,6 @@ export default function DashboardScreen() {
           ))}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   )
 }
