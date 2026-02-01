@@ -1,18 +1,34 @@
 import { HapticTab } from '@/components/haptic-tab'
-import { IconSymbol } from '@/components/ui/icon-symbol'
-import { Colors } from '@/constants/theme'
-import { useColorScheme } from '@/hooks/use-color-scheme'
+import { MaterialIcons } from '@expo/vector-icons'
 import { Tabs } from 'expo-router'
+import { Platform } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme()
+  const insets = useSafeAreaInsets()
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: '#2563eb',
+        tabBarInactiveTintColor: '#94a3b8',
         headerShown: false,
-        tabBarButton: HapticTab
+        tabBarButton: HapticTab,
+        tabBarHideOnKeyboard: true,
+        tabBarStyle: {
+          backgroundColor: '#ffffff',
+          borderTopWidth: 1,
+          borderTopColor: '#f1f5f9',
+          height: Platform.OS === 'ios' ? 88 : 68 + insets.bottom,
+          paddingBottom: Platform.OS === 'ios' ? 28 : insets.bottom + 10,
+          paddingTop: 8,
+          elevation: 0,
+          shadowOpacity: 0
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '500'
+        }
       }}
     >
       <Tabs.Screen
@@ -20,7 +36,7 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
+            <MaterialIcons name="home" size={24} color={color} />
           )
         }}
       />
@@ -29,7 +45,7 @@ export default function TabLayout() {
         options={{
           title: 'Settings',
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="paperplane.fill" color={color} />
+            <MaterialIcons name="settings" size={24} color={color} />
           )
         }}
       />
