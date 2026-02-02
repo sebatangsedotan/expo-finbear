@@ -2,6 +2,7 @@ import { supabase } from '@/src/lib/supabase'
 import { useTransactionStore } from '@/src/stores'
 import { Ionicons } from '@expo/vector-icons'
 import { User } from '@supabase/supabase-js'
+import { router } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native'
 
@@ -89,13 +90,15 @@ export default function DashboardScreen() {
               icon: 'arrow-up',
               label: 'Send',
               color: 'bg-blue-50',
-              iconColor: '#2563eb'
+              iconColor: '#2563eb',
+              redirectPath: '/(app)/transactions/add-transaction?type=expense'
             },
             {
               icon: 'arrow-down',
               label: 'Receive',
               color: 'bg-emerald-50',
-              iconColor: '#059669'
+              iconColor: '#059669',
+              redirectPath: '/(app)/transactions/add-transaction?type=income'
             },
             {
               icon: 'grid',
@@ -114,7 +117,7 @@ export default function DashboardScreen() {
               <TouchableOpacity
                 className={`${action.color} h-14 w-14 rounded-2xl items-center justify-center border border-white shadow-sm`}
                 onPress={() => {
-                  // TODO: Implement action functions
+                  action.redirectPath && router.push(action.redirectPath as any)
                 }}
               >
                 <Ionicons
