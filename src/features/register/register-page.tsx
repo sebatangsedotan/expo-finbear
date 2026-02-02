@@ -1,17 +1,17 @@
-import { ThemedText } from '@/components/themed-text'
-import { IconSymbol } from '@/components/ui/icon-symbol'
+import { ThemedText } from '@/src/components/themed-text'
+import { IconSymbol } from '@/src/components/ui/icon-symbol'
 import { supabase } from '@/src/lib/supabase'
 import { router } from 'expo-router'
 import { useState } from 'react'
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -20,30 +20,44 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
-
   const [loading, setLoading] = useState(false)
 
   async function handleSignup() {
     setError(null)
 
+    // Validation
+    if (!email.trim()) {
+      setError('Please enter your email')
+      return
+    }
+    if (!password) {
+      setError('Please enter a password')
+      return
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters')
+      return
+    }
     if (password !== confirmPassword) {
       setError('Passwords do not match')
       return
     }
 
     setLoading(true)
+
     try {
       const { error } = await supabase.auth.signUp({
-        email,
+        email: email.trim().toLowerCase(),
         password
       })
 
       if (error) {
         setError(error.message)
-        return
       }
-
-      router.replace('/(tabs)')
+      // DON'T navigate here!
+      // onAuthStateChange in _layout.tsx handles navigation automatically
+    } catch (err) {
+      setError('An unexpected error occurred')
     } finally {
       setLoading(false)
     }
@@ -58,6 +72,7 @@ export default function RegisterPage() {
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
           className="px-6"
         >
           {/* Header Section */}
@@ -97,6 +112,8 @@ export default function RegisterPage() {
                 className="w-full h-14 px-4 rounded-2xl bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-800"
                 keyboardType="email-address"
                 autoCapitalize="none"
+                autoCorrect={false}
+                editable={!loading}
               />
             </View>
 
@@ -109,10 +126,11 @@ export default function RegisterPage() {
               <TextInput
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Enter your password"
+                placeholder="Create a password"
                 placeholderTextColor="#a1a1aa"
                 className="w-full h-14 px-4 rounded-2xl bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-800"
                 secureTextEntry
+                editable={!loading}
               />
             </View>
 
@@ -129,6 +147,7 @@ export default function RegisterPage() {
                 placeholderTextColor="#a1a1aa"
                 className="w-full h-14 px-4 rounded-2xl bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-800"
                 secureTextEntry
+                editable={!loading}
               />
             </View>
 
@@ -141,7 +160,9 @@ export default function RegisterPage() {
               {loading ? (
                 <ActivityIndicator color="white" />
               ) : (
-                <Text className="text-white font-bold text-lg">Register</Text>
+                <Text className="text-white font-bold text-lg">
+                  Create Account
+                </Text>
               )}
             </TouchableOpacity>
           </View>
@@ -178,7 +199,7 @@ export default function RegisterPage() {
             <ThemedText className="text-zinc-500">
               Already have an account?{' '}
             </ThemedText>
-            <TouchableOpacity onPress={() => router.push('/login')}>
+            <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
               <ThemedText className="text-blue-600 dark:text-blue-400 font-bold">
                 Log In
               </ThemedText>

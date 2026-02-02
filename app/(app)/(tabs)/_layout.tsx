@@ -1,4 +1,4 @@
-import { HapticTab } from '@/components/haptic-tab'
+import { HapticTab } from '@/src/components/haptic-tab'
 import { MaterialIcons } from '@expo/vector-icons'
 import { Tabs } from 'expo-router'
 import { Platform } from 'react-native'

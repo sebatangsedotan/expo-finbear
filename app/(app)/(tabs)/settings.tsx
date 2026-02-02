@@ -1,11 +1,11 @@
-import { ThemedText } from '@/components/themed-text'
-import { ThemedView } from '@/components/themed-view'
-import { IconSymbol } from '@/components/ui/icon-symbol'
+import { ThemedText } from '@/src/components/themed-text'
+import { ThemedView } from '@/src/components/themed-view'
+import { IconSymbol } from '@/src/components/ui/icon-symbol'
 import { supabase } from '@/src/lib/supabase'
-import { router } from 'expo-router'
 import { useState } from 'react'
 import {
   ActivityIndicator,
+  Alert,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -15,14 +15,26 @@ import {
 export default function SettingsScreen() {
   const [loading, setLoading] = useState(false)
 
-  const handleLogout = async () => {
-    setLoading(true)
-    try {
-      await supabase.auth.signOut()
-      router.replace('/login')
-    } finally {
-      setLoading(false)
-    }
+  const handleLogout = () => {
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          setLoading(true)
+          try {
+            await supabase.auth.signOut()
+            // DON'T navigate here!
+            // onAuthStateChange in _layout.tsx handles navigation automatically
+          } catch (err) {
+            Alert.alert('Error', 'Failed to sign out. Please try again.')
+          } finally {
+            setLoading(false)
+          }
+        }
+      }
+    ])
   }
 
   return (
@@ -47,7 +59,7 @@ export default function SettingsScreen() {
             className={`flex-row items-center p-4 rounded-2xl border ${loading ? 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200' : 'bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/20'}`}
           >
             {loading ? (
-              <ActivityIndicator color={loading ? '#71717a' : '#ef4444'} />
+              <ActivityIndicator color="#71717a" />
             ) : (
               <IconSymbol name="paperplane.fill" size={20} color="#ef4444" />
             )}

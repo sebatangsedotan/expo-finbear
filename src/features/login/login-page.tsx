@@ -1,5 +1,5 @@
-import { ThemedText } from '@/components/themed-text'
-import { IconSymbol } from '@/components/ui/icon-symbol'
+import { ThemedText } from '@/src/components/themed-text'
+import { IconSymbol } from '@/src/components/ui/icon-symbol'
 import { supabase } from '@/src/lib/supabase'
 import { router } from 'expo-router'
 import { useState } from 'react'
@@ -19,25 +19,36 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
-
   const [loading, setLoading] = useState(false)
 
   async function handleLogin() {
     setError(null)
+
+    // Basic validation
+    if (!email.trim()) {
+      setError('Please enter your email')
+      return
+    }
+    if (!password) {
+      setError('Please enter your password')
+      return
+    }
+
     setLoading(true)
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim().toLowerCase(),
         password
       })
 
       if (error) {
         setError(error.message)
-        return
       }
-
-      router.replace('/(tabs)')
+      // DON'T navigate here!
+      // onAuthStateChange in _layout.tsx handles navigation automatically
+    } catch (err) {
+      setError('An unexpected error occurred')
     } finally {
       setLoading(false)
     }
@@ -52,6 +63,7 @@ export default function LoginPage() {
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
           className="px-6"
         >
           {/* Header Section */}
@@ -91,6 +103,8 @@ export default function LoginPage() {
                 className="w-full h-14 px-4 rounded-2xl bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-800"
                 keyboardType="email-address"
                 autoCapitalize="none"
+                autoCorrect={false}
+                editable={!loading}
               />
             </View>
 
@@ -107,6 +121,7 @@ export default function LoginPage() {
                 placeholderTextColor="#a1a1aa"
                 className="w-full h-14 px-4 rounded-2xl bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-800"
                 secureTextEntry
+                editable={!loading}
               />
             </View>
 
@@ -156,7 +171,7 @@ export default function LoginPage() {
             <ThemedText className="text-zinc-500">
               Don&apos;t have an account?{' '}
             </ThemedText>
-            <TouchableOpacity onPress={() => router.push('/register')}>
+            <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
               <ThemedText className="text-blue-600 dark:text-blue-400 font-bold">
                 Sign Up
               </ThemedText>
