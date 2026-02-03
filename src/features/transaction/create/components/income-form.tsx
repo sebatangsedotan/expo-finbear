@@ -1,24 +1,24 @@
 import { Ionicons } from '@expo/vector-icons'
 import { useState } from 'react'
 import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native'
 
-// Dummy data for categories
-const EXPENSE_CATEGORIES = [
-  { id: '1', name: 'Food & Dining', icon: 'restaurant', color: '#ef4444' },
-  { id: '2', name: 'Transportation', icon: 'car', color: '#f97316' },
-  { id: '3', name: 'Shopping', icon: 'bag-handle', color: '#eab308' },
-  { id: '4', name: 'Entertainment', icon: 'game-controller', color: '#8b5cf6' },
-  { id: '5', name: 'Bills & Utilities', icon: 'receipt', color: '#06b6d4' },
-  { id: '6', name: 'Healthcare', icon: 'medical', color: '#ec4899' },
-  { id: '7', name: 'Education', icon: 'school', color: '#3b82f6' },
+// Dummy data for income categories
+const INCOME_CATEGORIES = [
+  { id: '1', name: 'Salary', icon: 'briefcase', color: '#10b981' },
+  { id: '2', name: 'Freelance', icon: 'laptop', color: '#06b6d4' },
+  { id: '3', name: 'Investment', icon: 'trending-up', color: '#8b5cf6' },
+  { id: '4', name: 'Gift', icon: 'gift', color: '#ec4899' },
+  { id: '5', name: 'Refund', icon: 'arrow-undo', color: '#f97316' },
+  { id: '6', name: 'Bonus', icon: 'star', color: '#eab308' },
+  { id: '7', name: 'Cashback', icon: 'cash', color: '#14b8a6' },
   { id: '8', name: 'Others', icon: 'ellipsis-horizontal', color: '#6b7280' }
 ] as const
 
@@ -41,7 +41,7 @@ const ACCOUNTS = [
   { id: '3', name: 'Cash', balance: 500000, icon: 'cash', color: '#16a34a' }
 ] as const
 
-export const ExpenseForm = () => {
+export const IncomeForm = () => {
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
@@ -49,7 +49,7 @@ export const ExpenseForm = () => {
   const [showCategoryPicker, setShowCategoryPicker] = useState(false)
   const [showAccountPicker, setShowAccountPicker] = useState(false)
 
-  const selectedCategoryData = EXPENSE_CATEGORIES.find(
+  const selectedCategoryData = INCOME_CATEGORIES.find(
     (c) => c.id === selectedCategory
   )
   const selectedAccountData = ACCOUNTS.find((a) => a.id === selectedAccount)
@@ -78,7 +78,7 @@ export const ExpenseForm = () => {
             Amount
           </Text>
           <View className="flex-row items-center bg-zinc-100 dark:bg-zinc-900 rounded-2xl px-4 h-16 border border-zinc-200 dark:border-zinc-800">
-            <Text className="text-xl font-bold text-red-500 mr-2">Rp</Text>
+            <Text className="text-xl font-bold text-emerald-500 mr-2">Rp</Text>
             <TextInput
               value={amount}
               onChangeText={setAmount}
@@ -129,7 +129,7 @@ export const ExpenseForm = () => {
           {showCategoryPicker && (
             <View className="mt-3 bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-3 border border-zinc-200 dark:border-zinc-800">
               <View className="flex-row flex-wrap">
-                {EXPENSE_CATEGORIES.map((category) => (
+                {INCOME_CATEGORIES.map((category) => (
                   <TouchableOpacity
                     key={category.id}
                     onPress={() => {
@@ -145,7 +145,7 @@ export const ExpenseForm = () => {
                     <View
                       className={`w-12 h-12 rounded-2xl items-center justify-center mb-2 ${
                         selectedCategory === category.id
-                          ? 'border-2 border-red-500'
+                          ? 'border-2 border-emerald-500'
                           : ''
                       }`}
                       style={{ backgroundColor: category.color + '20' }}
@@ -157,7 +157,7 @@ export const ExpenseForm = () => {
                       />
                     </View>
                     <Text className="text-xs text-center text-zinc-600 dark:text-zinc-300 font-medium">
-                      {category.name.split(' ')[0]}
+                      {category.name}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -169,7 +169,7 @@ export const ExpenseForm = () => {
         {/* Account Selector */}
         <View className="mb-6">
           <Text className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2 ml-1">
-            From Account
+            To Account
           </Text>
           <TouchableOpacity
             onPress={() => setShowAccountPicker(!showAccountPicker)}
@@ -220,7 +220,7 @@ export const ExpenseForm = () => {
                     index !== ACCOUNTS.length - 1
                       ? 'border-b border-zinc-200 dark:border-zinc-800'
                       : ''
-                  } ${selectedAccount === account.id ? 'bg-red-50 dark:bg-red-900/20' : ''}`}
+                  } ${selectedAccount === account.id ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''}`}
                 >
                   <View
                     className="w-10 h-10 rounded-full items-center justify-center mr-3"
@@ -244,7 +244,7 @@ export const ExpenseForm = () => {
                     <Ionicons
                       name="checkmark-circle"
                       size={24}
-                      color="#ef4444"
+                      color="#10b981"
                     />
                   )}
                 </TouchableOpacity>
@@ -291,10 +291,10 @@ export const ExpenseForm = () => {
 
         {/* Submit Button */}
         <TouchableOpacity
-          className="bg-red-500 h-14 rounded-2xl items-center justify-center shadow-lg mt-4"
+          className="bg-emerald-500 h-14 rounded-2xl items-center justify-center shadow-lg mt-4"
           activeOpacity={0.8}
         >
-          <Text className="text-white font-bold text-lg">Add Expense</Text>
+          <Text className="text-white font-bold text-lg">Add Income</Text>
         </TouchableOpacity>
 
         <View className="h-8" />

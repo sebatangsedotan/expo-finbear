@@ -4,6 +4,9 @@ import { useState } from 'react'
 import { Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+import { ExpenseForm } from './components/expense-form'
+import { IncomeForm } from './components/income-form'
+
 export const CreateTransactionPage = ({
   transactionType
 }: {
@@ -69,11 +72,7 @@ export const CreateTransactionPage = ({
       </View>
 
       <View className="flex-1 p-6">
-        {trxType === 'expense' ? (
-          <Text className="text-red-600">Expense form here...</Text>
-        ) : (
-          <Text className="text-emerald-600">Income form here...</Text>
-        )}
+        {trxType === 'expense' ? <ExpenseForm /> : <IncomeForm />}
       </View>
     </SafeAreaView>
   )
