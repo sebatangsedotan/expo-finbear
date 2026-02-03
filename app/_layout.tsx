@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar'
 import { useEffect, useState } from 'react'
 import { ActivityIndicator, View } from 'react-native'
 import 'react-native-reanimated'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import '../global.css'
 
 import { useColorScheme } from '@/src/hooks/use-color-scheme'
@@ -21,15 +22,12 @@ export default function RootLayout() {
   const segments = useSegments()
   const router = useRouter()
 
-  // Single source of truth for auth state
   useEffect(() => {
-    // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setLoading(false)
     })
 
-    // Listen for ALL auth state changes
     const {
       data: { subscription }
     } = supabase.auth.onAuthStateChange((event, session) => {
@@ -39,56 +37,51 @@ export default function RootLayout() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Handle navigation based on auth state - SINGLE PLACE
   useEffect(() => {
     if (loading) return
 
-    // Get first segment (route group)
     const firstSegment = segments[0]
     const inAuthGroup = firstSegment === '(auth)'
     const inAppGroup = firstSegment === '(app)'
 
     if (session) {
-      // User is authenticated
       if (inAuthGroup) {
-        // On auth pages, redirect to app
         router.replace('/(app)/(tabs)' as Href)
       }
     } else {
-      // User is NOT authenticated
       if (inAppGroup) {
-        // Trying to access protected routes, redirect to login
         router.replace('/(auth)/login' as Href)
       }
     }
   }, [session, segments, loading, router])
 
-  // Show loading while checking auth
   if (loading) {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor: colorScheme === 'dark' ? '#09090b' : '#ffffff'
-        }}
-      >
-        <ActivityIndicator size="large" color="#2563eb" />
-      </View>
+      <SafeAreaProvider>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: colorScheme === 'dark' ? '#09090b' : '#ffffff'
+          }}
+        >
+          <ActivityIndicator size="large" color="#2563eb" />
+        </View>
+      </SafeAreaProvider>
     )
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack screenOptions={{ headerShown: false }}>
-        {/* Auth routes - always available for unauthenticated users */}
-        <Stack.Screen name="(auth)" />
-
-        {/* Protected routes - only render when authenticated */}
-        {session && <Stack.Screen name="(app)" />}
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack screenOptions={{ headerShown: false }}>
+          {/* Both route groups always registered - auth protection via redirects */}
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(app)" />
+        </Stack>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </SafeAreaProvider>
   )
 }
