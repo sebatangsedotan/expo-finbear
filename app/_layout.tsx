@@ -1,50 +1,33 @@
 import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider
+    DarkTheme,
+    DefaultTheme,
+    ThemeProvider
 } from '@react-navigation/native'
 import { Href, Stack, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { ActivityIndicator, View } from 'react-native'
 import 'react-native-reanimated'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import '../global.css'
 
 import { useColorScheme } from '@/src/hooks/use-color-scheme'
-import { supabase } from '@/src/lib/supabase'
-import { Session } from '@supabase/supabase-js'
+import { useAuthStore } from '@/src/stores/auth.store'
 
 export default function RootLayout() {
   const colorScheme = useColorScheme()
-  const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { isAuthenticated, isInitialized } = useAuthStore()
   const segments = useSegments()
   const router = useRouter()
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setLoading(false)
-    })
-
-    const {
-      data: { subscription }
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-  useEffect(() => {
-    if (loading) return
+    if (!isInitialized) return
 
     const firstSegment = segments[0]
     const inAuthGroup = firstSegment === '(auth)'
     const inAppGroup = firstSegment === '(app)'
 
-    if (session) {
+    if (isAuthenticated) {
       if (inAuthGroup) {
         router.replace('/(app)/(tabs)' as Href)
       }
@@ -53,9 +36,9 @@ export default function RootLayout() {
         router.replace('/(auth)/login' as Href)
       }
     }
-  }, [session, segments, loading, router])
+  }, [isAuthenticated, segments, isInitialized, router])
 
-  if (loading) {
+  if (!isInitialized) {
     return (
       <SafeAreaProvider>
         <View

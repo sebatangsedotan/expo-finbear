@@ -1,6 +1,7 @@
 import { ThemedText } from '@/src/components/themed-text'
 import { IconSymbol } from '@/src/components/ui/icon-symbol'
-import { supabase } from '@/src/lib/supabase'
+import { apiClient } from '@/src/lib/api-client'
+import { useAuthStore } from '@/src/stores/auth.store'
 import { router } from 'expo-router'
 import { useState } from 'react'
 import {
@@ -21,6 +22,7 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const setAuth = useAuthStore((state) => state.setAuth)
 
   async function handleSignup() {
     setError(null)
@@ -46,18 +48,27 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
-      const { error } = await supabase.auth.signUp({
+      // 1. Register
+      await apiClient.post('/auth/register', {
+        email: email.trim().toLowerCase(),
+        password,
+        name: email.split('@')[0] // Dummy name from email
+      })
+
+      // 2. Automatic Login
+      const loginData = await apiClient.post<any>('/auth/login', {
         email: email.trim().toLowerCase(),
         password
       })
 
-      if (error) {
-        setError(error.message)
-      }
-      // DON'T navigate here!
-      // onAuthStateChange in _layout.tsx handles navigation automatically
-    } catch (err) {
-      setError('An unexpected error occurred')
+      setAuth(loginData.user, loginData.token)
+
+      // Manual redirect as a fallback
+      setTimeout(() => {
+        router.replace('/(app)/(tabs)')
+      }, 100)
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred')
     } finally {
       setLoading(false)
     }

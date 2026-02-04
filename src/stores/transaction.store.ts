@@ -1,3 +1,5 @@
+import { apiClient } from '@/src/lib/api-client'
+import { Transaction as DbTransaction } from '@/src/types/database'
 import { create } from 'zustand'
 
 export interface Transaction {
@@ -19,86 +21,86 @@ export interface SavingsGoal {
   icon: string
 }
 
+interface DashboardSummary {
+  total_balance: string
+  monthly_stats: {
+    income: string
+    expense: string
+    net: string
+    period: string
+  }
+  recent_transactions: DbTransaction[]
+  top_expense_categories: { name: string; total: number }[]
+}
+
 interface TransactionState {
   transactions: Transaction[]
   savingsGoals: SavingsGoal[]
   totalBalance: number
   isLoading: boolean
+  monthlyStats: DashboardSummary['monthly_stats'] | null
 
   // Actions
+  fetchDashboard: () => Promise<void>
+  fetchTransactions: () => Promise<void>
   addTransaction: (tx: Omit<Transaction, 'id'>) => void
   deleteTransaction: (id: string) => void
   getRecentTransactions: (limit?: number) => Transaction[]
 }
 
-// Mock data
-const MOCK_TRANSACTIONS: Transaction[] = [
-  {
-    id: '1',
-    title: 'Apple Music',
-    category: 'Entertainment',
-    amount: -9.99,
-    date: 'Today, 10:45 AM',
-    icon: 'musical-notes',
-    iconColor: '#db2777',
-    backgroundColor: 'bg-pink-50'
-  },
-  {
-    id: '2',
-    title: 'Freelance Pay',
-    category: 'Income',
-    amount: 850.0,
-    date: 'Yesterday',
-    icon: 'cash',
-    iconColor: '#059669',
-    backgroundColor: 'bg-emerald-50'
-  },
-  {
-    id: '3',
-    title: 'Starbucks',
-    category: 'Food & Drink',
-    amount: -5.5,
-    date: 'Jan 30',
-    icon: 'cafe',
-    iconColor: '#d97706',
-    backgroundColor: 'bg-orange-50'
-  },
-  {
-    id: '4',
-    title: 'Gym Membership',
-    category: 'Health',
-    amount: -45.0,
-    date: 'Jan 28',
-    icon: 'fitness',
-    iconColor: '#2563eb',
-    backgroundColor: 'bg-blue-50'
-  }
-]
-
-const MOCK_SAVINGS_GOALS: SavingsGoal[] = [
-  {
-    id: '1',
-    title: 'New MacBook Pro',
-    target: 2400,
-    current: 1800,
-    icon: 'laptop'
-  },
-  {
-    id: '2',
-    title: 'Tokyo Trip',
-    target: 5000,
-    current: 1250,
-    icon: 'airplane'
-  }
-]
+const mapDbTransactionToStore = (dbTx: DbTransaction): Transaction => ({
+  id: dbTx.id,
+  title: dbTx.description || 'Transaction',
+  category: dbTx.category_name || 'General',
+  amount: Number(dbTx.amount) * (dbTx.type === 'expense' ? -1 : 1),
+  date: new Date(dbTx.date).toLocaleDateString(),
+  icon: dbTx.category?.icon || 'cash',
+  iconColor: dbTx.category?.color || '#3b82f6',
+  backgroundColor: 'bg-blue-50'
+})
 
 export const useTransactionStore = create<TransactionState>((set, get) => ({
-  transactions: MOCK_TRANSACTIONS,
-  savingsGoals: MOCK_SAVINGS_GOALS,
-  totalBalance: 12450.8,
+  transactions: [],
+  savingsGoals: [],
+  totalBalance: 0,
   isLoading: false,
+  monthlyStats: null,
+
+  fetchDashboard: async () => {
+    set({ isLoading: true })
+    try {
+      const summary =
+        await apiClient.get<DashboardSummary>('/dashboard/summary')
+      set({
+        totalBalance: Number(summary.total_balance),
+        monthlyStats: summary.monthly_stats,
+        transactions: summary.recent_transactions.map(mapDbTransactionToStore)
+      })
+    } catch (error) {
+      console.error('Failed to fetch dashboard:', error)
+    } finally {
+      set({ isLoading: false })
+    }
+  },
+
+  fetchTransactions: async () => {
+    set({ isLoading: true })
+    try {
+      const data = await apiClient.get<{ transactions: DbTransaction[] }>(
+        '/transactions'
+      )
+      set({
+        transactions: data.transactions.map(mapDbTransactionToStore)
+      })
+    } catch (error) {
+      console.error('Failed to fetch transactions:', error)
+    } finally {
+      set({ isLoading: false })
+    }
+  },
 
   addTransaction: (tx) => {
+    // Local state update (optimistic or manual)
     const newTransaction: Transaction = {
       ...tx,
       id: 'tx_' + Date.now()

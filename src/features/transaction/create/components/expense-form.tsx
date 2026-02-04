@@ -1,6 +1,9 @@
 import { Ionicons } from '@expo/vector-icons'
-import { useState } from 'react'
+import { useRouter } from 'expo-router'
+import { useEffect, useState } from 'react'
 import {
+  ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -10,49 +13,53 @@ import {
   View
 } from 'react-native'
 
-// Dummy data for categories
-const EXPENSE_CATEGORIES = [
-  { id: '1', name: 'Food & Dining', icon: 'restaurant', color: '#ef4444' },
-  { id: '2', name: 'Transportation', icon: 'car', color: '#f97316' },
-  { id: '3', name: 'Shopping', icon: 'bag-handle', color: '#eab308' },
-  { id: '4', name: 'Entertainment', icon: 'game-controller', color: '#8b5cf6' },
-  { id: '5', name: 'Bills & Utilities', icon: 'receipt', color: '#06b6d4' },
-  { id: '6', name: 'Healthcare', icon: 'medical', color: '#ec4899' },
-  { id: '7', name: 'Education', icon: 'school', color: '#3b82f6' },
-  { id: '8', name: 'Others', icon: 'ellipsis-horizontal', color: '#6b7280' }
-] as const
-
-// Dummy data for accounts
-const ACCOUNTS = [
-  {
-    id: '1',
-    name: 'Main Wallet',
-    balance: 2500000,
-    icon: 'wallet',
-    color: '#3b82f6'
-  },
-  {
-    id: '2',
-    name: 'Bank BCA',
-    balance: 15000000,
-    icon: 'card',
-    color: '#0369a1'
-  },
-  { id: '3', name: 'Cash', balance: 500000, icon: 'cash', color: '#16a34a' }
-] as const
+import { createTransaction } from '@/src/services/transaction/create-transaction.service'
+import {
+  getAccounts,
+  getCategories
+} from '@/src/services/transaction/get-transactions.service'
+import { Account, Category } from '@/src/types/database'
 
 export const ExpenseForm = () => {
+  const router = useRouter()
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [selectedAccount, setSelectedAccount] = useState<string | null>('1')
+  const [selectedAccount, setSelectedAccount] = useState<string | null>(null)
   const [showCategoryPicker, setShowCategoryPicker] = useState(false)
   const [showAccountPicker, setShowAccountPicker] = useState(false)
 
-  const selectedCategoryData = EXPENSE_CATEGORIES.find(
-    (c) => c.id === selectedCategory
-  )
-  const selectedAccountData = ACCOUNTS.find((a) => a.id === selectedAccount)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [accounts, setAccounts] = useState<Account[]>([])
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [categoriesData, accountsData] = await Promise.all([
+          getCategories('expense'),
+          getAccounts()
+        ])
+        setCategories(categoriesData)
+        setAccounts(accountsData)
+
+        if (accountsData.length > 0) {
+          setSelectedAccount(accountsData[0].id)
+        }
+      } catch (error) {
+        console.error('Failed to fetch data:', error)
+        Alert.alert('Error', 'Failed to load categories and accounts')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  const selectedCategoryData = categories.find((c) => c.id === selectedCategory)
+  const selectedAccountData = accounts.find((a) => a.id === selectedAccount)
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -60,6 +67,49 @@ export const ExpenseForm = () => {
       currency: 'IDR',
       minimumFractionDigits: 0
     }).format(value)
+  }
+
+  const handleSubmit = async () => {
+    if (!amount || Number(amount) <= 0) {
+      Alert.alert('Error', 'Please enter a valid amount')
+      return
+    }
+    if (!selectedCategory) {
+      Alert.alert('Error', 'Please select a category')
+      return
+    }
+    if (!selectedAccount) {
+      Alert.alert('Error', 'Please select an account')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      await createTransaction({
+        amount: Number(amount),
+        type: 'expense',
+        category_name: selectedCategoryData?.name || '',
+        account_id: selectedAccount,
+        description: description || undefined,
+        date: new Date().toISOString().split('T')[0]
+      })
+      Alert.alert('Success', 'Expense added successfully', [
+        { text: 'OK', onPress: () => router.replace('/transactions') }
+      ])
+    } catch (error) {
+      console.error('Failed to create transaction:', error)
+      Alert.alert('Error', 'Failed to add expense')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <View className="flex-1 items-center justify-center">
+        <ActivityIndicator size="large" color="#ef4444" />
+      </View>
+    )
   }
 
   return (
@@ -103,12 +153,15 @@ export const ExpenseForm = () => {
               <>
                 <View
                   className="w-10 h-10 rounded-full items-center justify-center mr-3"
-                  style={{ backgroundColor: selectedCategoryData.color + '20' }}
+                  style={{
+                    backgroundColor:
+                      (selectedCategoryData.color || '#ef4444') + '20'
+                  }}
                 >
                   <Ionicons
-                    name={selectedCategoryData.icon as any}
+                    name={(selectedCategoryData.icon as any) || 'restaurant'}
                     size={20}
-                    color={selectedCategoryData.color}
+                    color={selectedCategoryData.color || '#ef4444'}
                   />
                 </View>
                 <Text className="flex-1 text-zinc-900 dark:text-white font-medium">
@@ -129,7 +182,7 @@ export const ExpenseForm = () => {
           {showCategoryPicker && (
             <View className="mt-3 bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-3 border border-zinc-200 dark:border-zinc-800">
               <View className="flex-row flex-wrap">
-                {EXPENSE_CATEGORIES.map((category) => (
+                {categories.map((category) => (
                   <TouchableOpacity
                     key={category.id}
                     onPress={() => {
@@ -148,16 +201,21 @@ export const ExpenseForm = () => {
                           ? 'border-2 border-red-500'
                           : ''
                       }`}
-                      style={{ backgroundColor: category.color + '20' }}
+                      style={{
+                        backgroundColor: (category.color || '#ef4444') + '20'
+                      }}
                     >
                       <Ionicons
-                        name={category.icon as any}
+                        name={(category.icon as any) || 'restaurant'}
                         size={24}
-                        color={category.color}
+                        color={category.color || '#ef4444'}
                       />
                     </View>
-                    <Text className="text-xs text-center text-zinc-600 dark:text-zinc-300 font-medium">
-                      {category.name.split(' ')[0]}
+                    <Text
+                      numberOfLines={1}
+                      className="text-[10px] text-center text-zinc-600 dark:text-zinc-300 font-medium px-1"
+                    >
+                      {category.name}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -179,13 +237,11 @@ export const ExpenseForm = () => {
               <>
                 <View
                   className="w-10 h-10 rounded-full items-center justify-center mr-3"
-                  style={{ backgroundColor: selectedAccountData.color + '20' }}
+                  style={{
+                    backgroundColor: '#3b82f620'
+                  }}
                 >
-                  <Ionicons
-                    name={selectedAccountData.icon as any}
-                    size={20}
-                    color={selectedAccountData.color}
-                  />
+                  <Ionicons name="wallet" size={20} color="#3b82f6" />
                 </View>
                 <View className="flex-1">
                   <Text className="text-zinc-900 dark:text-white font-medium">
@@ -209,7 +265,7 @@ export const ExpenseForm = () => {
           {/* Account List */}
           {showAccountPicker && (
             <View className="mt-3 bg-zinc-50 dark:bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800">
-              {ACCOUNTS.map((account, index) => (
+              {accounts.map((account, index) => (
                 <TouchableOpacity
                   key={account.id}
                   onPress={() => {
@@ -217,20 +273,16 @@ export const ExpenseForm = () => {
                     setShowAccountPicker(false)
                   }}
                   className={`flex-row items-center px-4 py-3 ${
-                    index !== ACCOUNTS.length - 1
+                    index !== accounts.length - 1
                       ? 'border-b border-zinc-200 dark:border-zinc-800'
                       : ''
                   } ${selectedAccount === account.id ? 'bg-red-50 dark:bg-red-900/20' : ''}`}
                 >
                   <View
                     className="w-10 h-10 rounded-full items-center justify-center mr-3"
-                    style={{ backgroundColor: account.color + '20' }}
+                    style={{ backgroundColor: '#3b82f620' }}
                   >
-                    <Ionicons
-                      name={account.icon as any}
-                      size={20}
-                      color={account.color}
-                    />
+                    <Ionicons name="wallet" size={20} color="#3b82f6" />
                   </View>
                   <View className="flex-1">
                     <Text className="text-zinc-900 dark:text-white font-medium">
@@ -275,7 +327,7 @@ export const ExpenseForm = () => {
           <Text className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2 ml-1">
             Date
           </Text>
-          <TouchableOpacity className="flex-row items-center bg-zinc-100 dark:bg-zinc-900 rounded-2xl px-4 h-14 border border-zinc-200 dark:border-zinc-800">
+          <View className="flex-row items-center bg-zinc-100 dark:bg-zinc-900 rounded-2xl px-4 h-14 border border-zinc-200 dark:border-zinc-800 opacity-60">
             <Ionicons name="calendar-outline" size={20} color="#71717a" />
             <Text className="flex-1 text-zinc-900 dark:text-white ml-3 font-medium">
               Today,{' '}
@@ -285,19 +337,24 @@ export const ExpenseForm = () => {
                 year: 'numeric'
               })}
             </Text>
-            <Ionicons name="chevron-forward" size={20} color="#71717a" />
-          </TouchableOpacity>
+          </View>
         </View>
 
         {/* Submit Button */}
         <TouchableOpacity
+          onPress={handleSubmit}
+          disabled={submitting}
           className="bg-red-500 h-14 rounded-2xl items-center justify-center shadow-lg mt-4"
           activeOpacity={0.8}
         >
-          <Text className="text-white font-bold text-lg">Add Expense</Text>
+          {submitting ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text className="text-white font-bold text-lg">Add Expense</Text>
+          )}
         </TouchableOpacity>
 
-        <View className="h-8" />
+        <View className="h-12" />
       </ScrollView>
     </KeyboardAvoidingView>
   )

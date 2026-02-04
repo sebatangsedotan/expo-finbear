@@ -1,19 +1,21 @@
 import { ThemedText } from '@/src/components/themed-text'
 import { ThemedView } from '@/src/components/themed-view'
 import { IconSymbol } from '@/src/components/ui/icon-symbol'
-import { supabase } from '@/src/lib/supabase'
+import { apiClient } from '@/src/lib/api-client'
+import { useAuthStore } from '@/src/stores/auth.store'
 import { useState } from 'react'
 import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    TouchableOpacity,
+    View
 } from 'react-native'
 
 export default function SettingsScreen() {
   const [loading, setLoading] = useState(false)
+  const clearAuth = useAuthStore((state) => state.clearAuth)
 
   const handleLogout = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -24,11 +26,11 @@ export default function SettingsScreen() {
         onPress: async () => {
           setLoading(true)
           try {
-            await supabase.auth.signOut()
-            // DON'T navigate here!
-            // onAuthStateChange in _layout.tsx handles navigation automatically
+            await apiClient.post('/auth/logout')
+            clearAuth()
           } catch (err) {
-            Alert.alert('Error', 'Failed to sign out. Please try again.')
+            // Even if API fails, we should clear local token if it's unauthorized
+            clearAuth()
           } finally {
             setLoading(false)
           }

@@ -1,19 +1,17 @@
-import { supabase } from '@/src/lib/supabase'
 import { useTransactionStore } from '@/src/stores'
+import { useAuthStore } from '@/src/stores/auth.store'
 import { Ionicons } from '@expo/vector-icons'
-import { User } from '@supabase/supabase-js'
 import { router } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native'
 
 export default function DashboardScreen() {
-  const [user, setUser] = useState<User | null>(null)
-  const { transactions, savingsGoals, totalBalance } = useTransactionStore()
+  const user = useAuthStore((state) => state.user)
+  const { transactions, savingsGoals, totalBalance, fetchDashboard } =
+    useTransactionStore()
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user)
-    })
+    fetchDashboard()
   }, [])
 
   // Format balance with dollars and cents
@@ -102,9 +100,10 @@ export default function DashboardScreen() {
             },
             {
               icon: 'grid',
-              label: 'Bills',
+              label: 'Transaction',
               color: 'bg-indigo-50',
-              iconColor: '#4f46e5'
+              iconColor: '#4f46e5',
+              redirectPath: '/(app)/transactions'
             },
             {
               icon: 'swap-horizontal',

@@ -1,6 +1,7 @@
 import { ThemedText } from '@/src/components/themed-text'
 import { IconSymbol } from '@/src/components/ui/icon-symbol'
-import { supabase } from '@/src/lib/supabase'
+import { apiClient } from '@/src/lib/api-client'
+import { useAuthStore } from '@/src/stores/auth.store'
 import { router } from 'expo-router'
 import { useState } from 'react'
 import {
@@ -20,6 +21,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const setAuth = useAuthStore((state) => state.setAuth)
 
   async function handleLogin() {
     setError(null)
@@ -37,18 +39,21 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const data = await apiClient.post<any>('/auth/login', {
         email: email.trim().toLowerCase(),
         password
       })
 
-      if (error) {
-        setError(error.message)
-      }
-      // DON'T navigate here!
-      // onAuthStateChange in _layout.tsx handles navigation automatically
-    } catch (err) {
-      setError('An unexpected error occurred')
+      console.log('Login successful, setting auth state...', data)
+      setAuth(data.user, data.token)
+
+      // Manual redirect as a fallback if RootLayout doesn't trigger
+      setTimeout(() => {
+        router.replace('/(app)/(tabs)')
+      }, 100)
+    } catch (err: any) {
+      console.error('Login handle error:', err)
+      setError(err.message || 'An unexpected error occurred')
     } finally {
       setLoading(false)
     }
